@@ -1,37 +1,36 @@
-# This Dockerfile uses `serve` npm package to serve the static files with node process.
-# You can find the Dockerfile for nginx in the following link:
-# https://github.com/refinedev/dockerfiles/blob/main/vite/Dockerfile.nginx
-FROM refinedev/node:18 AS base
+# om de image te builden: docker build -t frontend .
+# om hem te runnen gebruik: docker run -d -p 5173:80 --name frontend_build frontend
 
-FROM base as deps
 
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
+# 1. Gebruik lichte Node image
+FROM node:20-alpine
 
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# 2. Werkmap in container
+WORKDIR /app
 
-FROM base as builder
+# 3. Package files kopiëren
+COPY package*.json ./
 
-ENV NODE_ENV production
+# 4. Dependencies installeren
+RUN npm install --legacy-peer-deps
 
-COPY --from=deps /app/refine/node_modules ./node_modules
-
+# 5. Rest van de app kopiëren
 COPY . .
 
+# 6. Frontend builden
 RUN npm run build
 
-FROM base as runner
+# 7. Nginx om build te serveren
+FROM nginx:alpine
 
-ENV NODE_ENV production
+# 8. Nginx standaard files weg
+RUN rm -rf /usr/share/nginx/html/*
 
-RUN npm install -g serve
+# 9. Build kopiëren
+COPY --from=0 /app/dist /usr/share/nginx/html
 
-COPY --from=builder /app/refine/dist ./
+# 10. Poort openen
+EXPOSE 80
 
-USER refine
-
-CMD ["serve"]
+# 11. Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
