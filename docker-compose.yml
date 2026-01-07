@@ -4,3 +4,10 @@ services:
     build: ./opcua-server
     ports:
       - "4840:4840"
+
+  frontend:
+    build: ./frontend/kensan
+    container_name: kensan_frontend
+    ports:
+      - "5173:80"
+    restart: unless-stopped
