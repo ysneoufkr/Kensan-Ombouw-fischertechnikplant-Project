@@ -4,3 +4,7 @@ services:
     build: ./opcua-server
     ports:
       - "4840:4840"
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"

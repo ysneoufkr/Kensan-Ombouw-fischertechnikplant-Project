@@ -3,13 +3,9 @@ import { Request, Response } from 'express';
 import { getUserById } from '../auth.js';
 import sharp from 'sharp';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import path from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const UPLOAD_DIR = path.join(__dirname, '../profile_pictures');
+const UPLOAD_DIR = path.join(__dirname, '../../profile_pictures');
 if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
