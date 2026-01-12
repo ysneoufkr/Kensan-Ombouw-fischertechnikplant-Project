@@ -56,9 +56,3 @@ startServer().catch(error => {
   console.error('Failed to start server:', error);
   process.exit(1);
 });
-
-// Try to connect to OPC UA in the background
-opcuaController.connect().catch((error) => {
-  console.error('Failed to connect to OPC UA server:', error.message);
-  console.log('Server will continue running with test data');
-});
