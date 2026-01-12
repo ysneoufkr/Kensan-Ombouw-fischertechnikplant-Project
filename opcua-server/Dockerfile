@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -11,4 +11,4 @@ RUN npm run build
 
 EXPOSE 4840
 
-CMD ["node", "dist/testServer.js"]
+CMD ["npm", "run", "server"]
