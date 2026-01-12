@@ -14,7 +14,7 @@ class OPCUAController {
     public conveyerBelt: Conveyerbelt;
 
     private ns = 1;
-    private endpoint: string = "opc.tcp://localhost:4840/UA/TestServer/GVL/Interface";
+    private endpoint: string = "opc.tcp://opcua:4840/UA/TestServer/GVL/Interface";
 
     public async connect() {
         this.client = OPCUAClient.create({ endpointMustExist: false });

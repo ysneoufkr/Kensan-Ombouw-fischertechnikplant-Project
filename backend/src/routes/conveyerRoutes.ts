@@ -3,6 +3,6 @@ import { conveyerStatus } from '../controllers/conveyerController';
 
 const router = Router();
 
-router.post('/status', conveyerStatus);
+router.get('/status', conveyerStatus);
 
 export default router;

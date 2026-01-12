@@ -3,6 +3,6 @@ import { ovenStatus } from '../controllers/ovenController';
 
 const router = Router();
 
-router.post('/status', ovenStatus);
+router.get('/status', ovenStatus);
 
 export default router;
