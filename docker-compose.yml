@@ -1,18 +1,27 @@
 name: "Kensan-project"
 services:
   opcua:
+    container_name: opcua
     build: ./opcua-server
     ports:
       - "4840:4840"
 
+  backend:
+    container_name: backend
+    depends_on: 
+      - opcua
+    build: ./backend
+    environment:
+      IP: opcua
+    ports:
+      - "3000:3000"
+
   frontend:
+    container_name: frontend
+    depends_on: 
+      - backend
     build: ./frontend/kensan
-    container_name: kensan_frontend
     ports:
       - "5173:80"
     restart: unless-stopped
     
-  backend:
-    build: ./backend
-    ports:
-      - "3000:3000"

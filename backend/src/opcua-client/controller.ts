@@ -3,6 +3,7 @@ import { Crane } from "./models/crane";
 import { Conveyerbelt } from "./models/conveyerbelt";
 import { Oven } from "./models/oven";
 import { Warehouse } from "./models/warehouse";
+import { config } from "../config/env";
 
 class OPCUAController {
     private client: OPCUAClient;
@@ -14,7 +15,7 @@ class OPCUAController {
     public conveyerBelt: Conveyerbelt;
 
     private ns = 1;
-    private endpoint: string = "opc.tcp://opcua:4840/UA/TestServer/GVL/Interface";
+    private endpoint: string = `opc.tcp://${config.ip}:4840/UA/TestServer/GVL/Interface`;
 
     public async connect() {
         this.client = OPCUAClient.create({ endpointMustExist: false });
