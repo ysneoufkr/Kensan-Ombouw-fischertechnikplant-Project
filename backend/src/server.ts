@@ -44,12 +44,14 @@ app.get('/test', (req: Request, res: Response) => {
 
 async function startServer() {
   initDefaultUser();
-  await opcuaController.connect();
 
   app.listen(PORT, () => {
     console.log(`Kensan Auth Server running on http://localhost:${PORT}`);
-    console.log(`Default login: admin@kensan.nl / admin123`);
   });
+
+  opcuaController.connect()
+    .then(() => console.log("OPC UA connected"))
+    .catch(err => console.error("OPC UA connection failed", err));
 }
 
 startServer().catch(error => {

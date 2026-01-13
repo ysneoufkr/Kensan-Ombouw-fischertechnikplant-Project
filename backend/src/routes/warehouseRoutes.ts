@@ -3,6 +3,6 @@ import { warehouseStatus } from '../controllers/warehouseController';
 
 const router = Router();
 
-router.post('/status', warehouseStatus);
+router.get('/status', warehouseStatus);
 
 export default router;
