@@ -2,12 +2,9 @@ import bcrypt from 'bcrypt';
 import db from './db.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { User, UserWithoutPassword } from './models/user.js';
 import { UpdateProfileData } from './models/profile.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const SALT_ROUNDS = 10;
 
 export function updateUserProfile(userId: number, data: UpdateProfileData): UserWithoutPassword | null {

@@ -2,21 +2,15 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { initDefaultUser } from './auth.js';
 import userRoutes from './routes/userRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
-import { opcuaController } from "../src/opcua-client/controller"
+import { opcuaController } from "./opcua-client/controller.js"
 import warehouseRoutes from './routes/warehouseRoutes.js';
 import conveyerRoutes from './routes/conveyerRoutes.js';
 import craneRoutes from './routes/craneRoutes.js';
 import ovenRoutes from './routes/ovenRoutes.js';
-
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const UPLOAD_DIR = path.join(__dirname, '../profile_pictures');
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -48,17 +42,19 @@ app.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Server is running' });
 });
 
+async function startServer() {
+  initDefaultUser();
 
-initDefaultUser();
+  app.listen(PORT, () => {
+    console.log(`Kensan Auth Server running on http://localhost:${PORT}`);
+  });
 
-// Start Express server first
-app.listen(PORT, () => {
-  console.log(`Kensan Auth Server running on http://localhost:${PORT}`);
-  console.log(`Default login: admin@kensan.nl / admin123`);
-});
+  opcuaController.connect()
+    .then(() => console.log("OPC UA connected"))
+    .catch(err => console.error("OPC UA connection failed", err));
+}
 
-// Try to connect to OPC UA in the background
-opcuaController.connect().catch((error) => {
-  console.error('Failed to connect to OPC UA server:', error.message);
-  console.log('Server will continue running with test data');
+startServer().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });

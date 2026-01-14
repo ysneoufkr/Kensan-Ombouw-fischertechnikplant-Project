@@ -1,9 +1,5 @@
 import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { join } from 'path';
 
 const db = new Database(join(__dirname, '../kensan.db'));
 
@@ -23,7 +19,7 @@ db.exec(`
 try {
   const columns = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
   const hasProfilePicture = columns.some(col => col.name === 'profile_picture');
-  
+
   if (!hasProfilePicture) {
     db.exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
     console.log('✓ Added profile_picture column to users table');
