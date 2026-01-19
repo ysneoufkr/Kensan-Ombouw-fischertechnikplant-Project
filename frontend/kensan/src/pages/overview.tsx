@@ -5,350 +5,393 @@ import { usePlantData } from '../hooks/usePlantData';
 import '../kensan.css';
 
 // ==============================================================================
-// 1. CONFIGURATIE & COORDINATEN
+// 0. CONFIGURATIE & STYLING
 // ==============================================================================
 
-// Het industriële kleurenpalet (Rood/Zwart)
 const THEME = {
-  bg: '#050505',       // Bijna zwart
-  panel: '#0a0a0a',    // Iets lichter zwart voor panelen
-  border: '#333',      // Donkergrijs voor randen
-  accent: '#ff0000',   // Fel rood
-  dimRed: 'rgba(255, 0, 0, 0.1)',
-  text: '#e5e5e5',
-  success: '#00ff00'   // Alleen voor "Online" status
+  bg: '#121212',
+  alu: '#525252',
+  ft_red: '#dc2626',
+  ft_black: '#171717',
+  conveyor: '#262626',
+  active: '#22c55e',
+  heating: '#ef4444', 
+  sensor: '#eab308',
+  pneumatic: '#3b82f6',
+  accent_orange: '#f97316'
 };
 
-// De exacte posities op het scherm voor de animatie
-const COORDS = {
-  magazijn: { x: 100, y: 400 },
-  kraan_rust: { x: 400, y: 450 },
-  oven_in: { x: 300, y: 200 },
-  oven_uit: { x: 450, y: 200 },
-  band_start: { x: 700, y: 200 },
-  band_eind: { x: 700, y: 500 },
-};
-
-// De stappen van het proces (State Machine)
-type ProcessStep = 
-  | 'RUST' 
-  | 'OPHALEN_MAGAZIJN' 
-  | 'NAAR_OVEN' 
-  | 'IN_OVEN' 
-  | 'NAAR_BAND' 
-  | 'OP_BAND' 
-  | 'OPHALEN_BAND' 
-  | 'TERUG_MAGAZIJN';
-
-// ==============================================================================
-// 2. VISUELE MACHINE COMPONENTEN (SVG)
-// ==============================================================================
-
-// 2.1 Het Magazijn (Raster structuur)
-const MagazijnVisual = ({ isActive }: { isActive: boolean }) => (
-  <g transform="translate(20, 300)">
-    <rect x="0" y="0" width="160" height="200" fill="#111" stroke={isActive ? THEME.accent : "#333"} strokeWidth="2" />
-    {/* Stelling vakken */}
-    {[0, 40, 80, 120, 160].map(y => (
-      <line key={y} x1="0" y1={y} x2="160" y2={y} stroke="#333" strokeWidth="1" />
-    ))}
-    {[0, 53, 106, 160].map(x => (
-      <line key={x} x1={x} y1="0" x2={x} y2="200" stroke="#333" strokeWidth="1" />
-    ))}
-    <text x="80" y="-15" textAnchor="middle" fill={isActive ? THEME.accent : "#555"} fontSize="12" fontWeight="bold">MAGAZIJN</text>
-    {isActive && <circle cx="150" cy="10" r="4" fill="red" className="animate-ping" />}
+const Beam = ({ x, y, w, h, vertical = false }) => (
+  <g transform={`translate(${x}, ${y})`}>
+    <rect width={w} height={h} fill={THEME.alu} stroke="#000" strokeWidth="0.5" />
+    <line x1={vertical?w/2:0} y1={vertical?0:h/2} x2={vertical?w/2:w} y2={vertical?h:h/2} stroke="#333" strokeWidth="1" />
   </g>
 );
 
-// 2.2 De Oven (Hittekamer)
-const OvenVisual = ({ isActive }: { isActive: boolean }) => (
-  <g transform="translate(250, 100)">
-    {/* Behuizing */}
-    <rect x="0" y="0" width="200" height="120" fill="#111" stroke={isActive ? "orange" : "#333"} strokeWidth="3" rx="5" />
-    {/* Het venster */}
-    <rect x="50" y="30" width="100" height="60" fill={isActive ? "rgba(255, 69, 0, 0.3)" : "#000"} stroke="#333" />
-    {/* Verwarmingselementen animatie */}
-    {isActive && (
-      <path d="M 60 60 Q 85 40 110 60 T 160 60" stroke="orange" strokeWidth="2" fill="none" className="animate-pulse" />
-    )}
-    <text x="100" y="-15" textAnchor="middle" fill={isActive ? "orange" : "#555"} fontSize="12" fontWeight="bold">OVEN</text>
-  </g>
-);
-
-// 2.3 De Loopband (Transport)
-const LoopbandVisual = ({ isActive }: { isActive: boolean }) => (
-  <g transform="translate(650, 100)">
-    {/* De band zelf */}
-    <rect x="0" y="0" width="100" height="450" fill="#1a1a1a" stroke={isActive ? THEME.accent : "#333"} strokeWidth="2" />
-    {/* Rollers */}
-    {[50, 100, 150, 200, 250, 300, 350, 400].map(y => (
-      <line key={y} x1="10" y1={y} x2="90" y2={y} stroke="#333" strokeWidth="2" />
-    ))}
-    {/* Richting pijlen animatie */}
-    {isActive && (
-      <g className="animate-bounce">
-        <path d="M 50 20 L 40 10 H 60 Z" fill={THEME.accent} transform="rotate(180 50 20)" />
-      </g>
-    )}
-    <text x="50" y="-15" textAnchor="middle" fill={isActive ? THEME.accent : "#555"} fontSize="12" fontWeight="bold">SORTEERLIJN</text>
-  </g>
-);
-
-// 2.4 De Kraan (Centraal punt)
-const KraanVisual = ({ rotatie, isActive }: { rotatie: number, isActive: boolean }) => (
-  <g transform="translate(400, 450)">
-    {/* Base */}
-    <circle cx="0" cy="0" r="30" fill="#111" stroke="#333" strokeWidth="2" />
-    {/* De draaiende arm */}
-    <g transform={`rotate(${rotatie})`} style={{ transition: 'transform 1s ease-in-out' }}>
-        {/* Arm structuur */}
-        <rect x="-10" y="-180" width="20" height="180" fill="#222" stroke={isActive ? THEME.accent : "#444"} />
-        {/* Contragewicht */}
-        <rect x="-15" y="10" width="30" height="40" fill="#111" stroke="#333" />
-        {/* Loopkat */}
-        <rect x="-12" y="-160" width="24" height="30" fill={THEME.accent} />
+const Canopy = ({ x, y, width }) => (
+    <g transform={`translate(${x}, ${y})`}>
+        <path d={`M 0 15 L 5 0 L ${width-5} 0 L ${width} 15`} fill="#333" stroke="#555" opacity="0.9" />
+        <rect x="5" y="15" width={width-10} height="2" fill="#facc15" /> 
     </g>
-    <circle cx="0" cy="0" r="5" fill="red" />
+);
+
+// ==============================================================================
+// 1. MAGAZIJN (LINKS)
+// ==============================================================================
+const Warehouse = ({ x, y, craneY, armX, hasBlock }) => (
+  <g transform={`translate(${x}, ${y})`}>
+    <g>
+      <rect x="-5" y="0" width="30" height="280" fill="#111" stroke="#333" />
+      <Beam x={0} y={0} w={4} h={280} vertical />
+      <Beam x={20} y={0} w={4} h={280} vertical />
+    </g>
+    <g transform="translate(40, 0)">
+      <Beam x={0} y={0} w={4} h={230} vertical />
+      <Beam x={30} y={0} w={4} h={230} vertical />
+      {[0, 1, 2].map((i) => (
+         <g key={i} transform={`translate(6, ${i * 50 + 30})`}>
+             <rect width="22" height="18" rx="1" fill="#1a1a1a" stroke="#444" />
+             <text x="11" y="12" fontSize="6" fill="#555" textAnchor="middle">{3-i}</text>
+         </g>
+      ))}
+      {[0, 1, 2].map(i => <Beam key={i} x={4} y={i * 50 + 48} w={26} h={3} />)}
+    </g>
+    <g transform="translate(20, 240)">
+        <Canopy x="-10" y="-18" width="50" />
+        <rect width="50" height="10" fill={THEME.conveyor} />
+    </g>
+    
+    {/* KRAAN */}
+    <g transform={`translate(0, ${craneY})`}> 
+      {/* Arm (Achter de body) */}
+      <g transform={`translate(${armX}, 8)`}>
+        <rect x="0" y="2" width="40" height="5" fill="#ccc" stroke="#666" />
+        <rect x="35" y="0" width="6" height="9" fill="#fff" />
+        {hasBlock && <rect x="30" y="-5" width="10" height="10" fill="#fff" stroke="#666" />}
+      </g>
+      {/* Body */}
+      <rect x="-5" y="0" width="34" height="25" fill={THEME.ft_red} rx="2" stroke="#000" />
+    </g>
   </g>
 );
 
 // ==============================================================================
-// 3. HOOFDCOMPONENT
+// 2. ROBOT (MIDDEN)
+// ==============================================================================
+const Robot = ({ x, y, angle, reach, hasBlock }) => (
+  <g transform={`translate(${x}, ${y})`}>
+    <rect x="-30" y="-30" width="60" height="60" fill="#111" stroke="#333" rx="8" />
+    <circle r="25" fill="#222" stroke="#444" />
+    <g transform={`rotate(${angle})`}>
+      <rect x="-12" y="-12" width="24" height="24" rx="2" fill="#333" />
+      <rect x="-8" y="-80" width="16" height="80" rx="2" fill={THEME.ft_red} stroke="#990000" />
+      <g transform={`translate(0, -${reach})`}>
+        <rect x="-3" y="-85" width="6" height="60" fill="#ccc" />
+        <g transform="translate(0, -85)">
+          <rect x="-8" y="-8" width="16" height="10" fill="#222" />
+          <circle cx="0" cy="-8" r="4" fill={THEME.pneumatic} />
+          {hasBlock && <rect x="-5" y="-18" width="10" height="10" fill="#fff" stroke="#666" />}
+        </g>
+      </g>
+    </g>
+  </g>
+);
+
+// ==============================================================================
+// 3. PRODUCTIE & SORTEER LIJN (RECHTS)
+// ==============================================================================
+const ProductionLine = ({ 
+  x, y, 
+  ovenState, sawState, 
+  lineProgress, 
+  pistonActiveIndex, pistonExtension,
+  blockInBin 
+}) => {
+    
+    let bx = -100, by = -100;
+    let isVisible = true;
+    
+    if (lineProgress > 0) {
+        if (lineProgress <= 30) { 
+            // FASE 1: Oven In (-15 -> 25)
+            bx = -15 + (lineProgress / 30) * 40; 
+            by = 30;
+            if (lineProgress > 20 && ovenState.heating) isVisible = false;
+        } else if (lineProgress <= 60) { 
+            // FASE 2: Naar Zaag (25 -> 125)
+            const p = (lineProgress - 30) / 30;
+            bx = 25 + p * 100; 
+            by = 30;
+        } else if (lineProgress <= 100) { 
+            // FASE 3: Naar Band (125 -> 175) en Omlaag
+            const p = (lineProgress - 60) / 40;
+            if (p < 0.25) {
+                const subP = p / 0.25;
+                bx = 125 + subP * 50; 
+                by = 30;
+            } else {
+                const subP = (p - 0.25) / 0.75;
+                bx = 175;
+                if (pistonExtension > 0) bx -= pistonExtension; 
+                by = 30 + subP * 320;
+            }
+        }
+    }
+
+    return (
+      <g transform={`translate(${x}, ${y})`}>
+        <rect x="-20" y="30" width="20" height="10" fill={THEME.conveyor} />
+        <g transform="translate(0, 0)">
+            <rect width="60" height="50" fill="#222" stroke="#444" />
+            <text x="30" y="-8" fontSize="6" fill="#666" textAnchor="middle">OVEN</text>
+            <rect x="5" y="5" width="50" height="40" fill={ovenState.heating ? THEME.heating : "#000"} className={ovenState.heating ? "animate-pulse" : ""} />
+            <g style={{ transition: 'transform 0.5s', transform: ovenState.open ? 'translateY(-30px)' : 'translateY(0)' }}>
+                <rect x="2" y="2" width="56" height="46" fill="#404040" stroke="#555" />
+                <rect x="25" y="20" width="6" height="6" fill="#222" rx="1" />
+            </g>
+        </g>
+        <g transform="translate(100, 0)">
+            <rect width="50" height="50" fill="none" stroke="#333" strokeDasharray="2 2" />
+            <text x="25" y="-8" fontSize="6" fill="#666" textAnchor="middle">ZAAG</text>
+            <rect x="0" y="30" width="50" height="10" fill={THEME.conveyor} />
+            <g transform={`translate(25, ${sawState.down ? 30 : 5})`} style={{ transition: 'transform 0.2s ease-in' }}>
+                <path d="M -15 0 L 15 0 L 10 -40 L -10 -40 Z" fill="#ccc" stroke="#888" />
+                <path d="M -15 0 L -10 5 L -5 0 L 0 5 L 5 0 L 10 5 L 15 0" fill="#999" />
+            </g>
+            <rect x="15" y="-40" width="20" height="40" fill="#222" />
+        </g>
+        <rect x="60" y="30" width="40" height="10" fill={THEME.conveyor} />
+        <rect x="150" y="30" width="35" height="10" fill={THEME.conveyor} />
+        <g transform="translate(180, 35)">
+            <path d="M -20 0 Q 0 0 0 15" fill="none" stroke={THEME.conveyor} strokeWidth="10" />
+            <rect x="-5" y="15" width="10" height="300" fill={THEME.conveyor} stroke="#111" />
+            <g transform="translate(0, 30)">
+                <rect x="-10" y="0" width="20" height="6" fill="#333" stroke="#555" />
+                <line x1="-10" y1="4" x2="10" y2="4" stroke="red" strokeWidth="1.5" opacity="0.8" />
+            </g>
+            <g transform="translate(0, 160)"> 
+                {[0, 1, 2].map(i => {
+                    const isMoving = pistonActiveIndex === i;
+                    const currentX = isMoving ? -pistonExtension : 0; 
+                    return (
+                        <g key={i} transform={`translate(0, ${i * 50})`}>
+                            <text x="-40" y="4" fontSize="6" fill="#666" textAnchor="end" fontWeight="bold">#{i+1}</text>
+                            <rect x="-35" y="-2" width="35" height="4" fill="#2a2a2a" />
+                            <g transform={`translate(${currentX}, 0)`}>
+                                <rect x="5" y="-3" width="15" height="6" fill={THEME.pneumatic} />
+                                <rect x="20" y="-6" width="8" height="12" fill="#333" />
+                                <rect x="5" y="-6" width="2" height="12" fill="#555" />
+                            </g>
+                            <g transform="translate(-45, -10)">
+                                <rect width="20" height="20" rx="3" fill="#222" stroke="#444" />
+                                {blockInBin === i && (
+                                    <rect x="5" y="5" width="10" height="10" fill={THEME.active} stroke="#fff" rx="1" />
+                                )}
+                            </g>
+                        </g>
+                    );
+                })}
+            </g>
+        </g>
+        {lineProgress > 0 && isVisible && (
+             <g transform={`translate(${bx}, ${by})`}>
+                 <rect x="-6" y="-6" width="12" height="12" fill={THEME.active} stroke="#fff" strokeWidth="1" rx="1" />
+             </g>
+        )}
+      </g>
+    );
+};
+
+// ==============================================================================
+// HOOFD COMPONENT - MET SUPER SMOOTH ANIMATIE LOOP
 // ==============================================================================
 
-export function Overview() {
-  const { data, isOnline } = usePlantData();
-  
-  // State voor de simulatie cyclus
-  const [step, setStep] = useState<ProcessStep>('RUST');
-  const [productPos, setProductPos] = useState({ x: COORDS.magazijn.x, y: COORDS.magazijn.y, opacity: 1 });
-  const [kraanRotatie, setKraanRotatie] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+export const Overview = () => {
+  const { isOnline } = usePlantData();
+  const [status, setStatus] = useState("KLAAR");
 
-  // Functie om logs toe te voegen
-  const addLog = (msg: string) => {
-    setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 6));
-  };
+  const [craneY, setCraneY] = useState(240);
+  const [armX, setArmX] = useState(0);
+  const [whHasBlock, setWhHasBlock] = useState(false);
+  const [robAngle, setRobAngle] = useState(-90);
+  const [robReach, setRobReach] = useState(0);
+  const [robHasBlock, setRobHasBlock] = useState(false);
+  const [ovenState, setOvenState] = useState({ open: false, heating: false });
+  const [sawState, setSawState] = useState({ down: false });
+  const [lineProgress, setLineProgress] = useState(0);
+  const [activePiston, setActivePiston] = useState(-1);
+  const [pistonExt, setPistonExt] = useState(0);
+  const [blockInBin, setBlockInBin] = useState(-1);
 
-  // ============================================================================
-  // DE PROCESS LOOP (De logica die de stappen volgt)
-  // ============================================================================
+  // Ref om animaties te cancelen als component unmount
+  const requestRef = useRef();
+
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
+    const runSequence = async () => {
+      const wait = ms => new Promise(r => setTimeout(r, ms));
+      
+      // DEZE FUNCTIE ZORGT VOOR DE SMOOTHNESS (RequestAnimationFrame)
+      const animate = (setter, start, end, duration) => {
+          return new Promise(resolve => {
+              const startTime = performance.now();
+              
+              const tick = (currentTime) => {
+                  const elapsed = currentTime - startTime;
+                  const progress = Math.min(elapsed / duration, 1);
+                  
+                  // Easing function voor nog zachtere beweging (optioneel, nu lineair)
+                  const val = start + (end - start) * progress;
+                  
+                  setter(val);
+                  
+                  if (progress < 1) {
+                      requestRef.current = requestAnimationFrame(tick);
+                  } else {
+                      resolve();
+                  }
+              };
+              
+              requestRef.current = requestAnimationFrame(tick);
+          });
+      };
 
-    const runCycle = () => {
-      switch (step) {
-        case 'RUST':
-          // Start de cyclus
-          timeout = setTimeout(() => {
-            addLog("Nieuwe order ontvangen. Start proces.");
-            setStep('OPHALEN_MAGAZIJN');
-          }, 2000);
-          break;
+      while(true) {
+        // --- 1. MAGAZIJN UITSLAG ---
+        setStatus("MAGAZIJN: OPHALEN");
+        const slot = [180, 130, 80][Math.floor(Math.random()*3)];
+        
+        await animate(setCraneY, craneY, slot, 600); 
+        await wait(100);
+        await animate(setArmX, 0, 42, 400); 
+        setWhHasBlock(true); await wait(150);
+        await animate(setArmX, 42, 0, 400); 
+        await animate(setCraneY, slot, 240, 600);
 
-        case 'OPHALEN_MAGAZIJN':
-          // Kraan draait naar magazijn (-90 graden)
-          setKraanRotatie(-90);
-          timeout = setTimeout(() => {
-            addLog("Kraan pakt product uit magazijn.");
-            // Product springt naar kraan
-            setProductPos({ ...COORDS.magazijn, opacity: 1 });
-            setStep('NAAR_OVEN');
-          }, 2000);
-          break;
+        // --- 2. ROBOT TRANSFER ---
+        setStatus("ROBOT: TRANSFER");
+        setWhHasBlock(false);
+        // Naar Links (-90)
+        await animate(setRobAngle, -90, -90, 100); // Check
+        await animate(setRobReach, 0, 200, 400); 
+        setRobHasBlock(true);
+        await animate(setRobReach, 200, 50, 400);
+        
+        // Naar Rechts (0 graden = recht omhoog/rechts)
+        await animate(setRobAngle, -90, 0, 800);
+        await animate(setRobReach, 50, 240, 400); 
+        
+        setRobHasBlock(false);
+        setLineProgress(1); 
+        await wait(100);
+        await animate(setRobReach, 240, 0, 300);
 
-        case 'NAAR_OVEN':
-          // Kraan draait naar oven (0 graden, boven)
-          setProductPos({ ...COORDS.magazijn, opacity: 0 }); // Verberg even tijdens draaien (optioneel)
-          setKraanRotatie(0);
-          timeout = setTimeout(() => {
-            addLog("Product geplaatst in oven.");
-            setProductPos({ ...COORDS.oven_in, opacity: 1 });
-            setStep('IN_OVEN');
-          }, 2000);
-          break;
+        // --- 3. OVEN PROCES ---
+        setStatus("OVEN: PROCES");
+        setOvenState({ open: true, heating: false }); await wait(200);
+        await animate(setLineProgress, 1, 30, 800); 
+        setOvenState({ open: false, heating: true }); await wait(1500);
+        setOvenState({ open: true, heating: false }); await wait(200);
 
-        case 'IN_OVEN':
-          // Wachten (bakken)
-          timeout = setTimeout(() => {
-            addLog("Oven proces voltooid (300°C).");
-            setProductPos({ ...COORDS.oven_uit, opacity: 1 });
-            setStep('NAAR_BAND');
-          }, 3000);
-          break;
+        // --- 4. ZAAG PROCES ---
+        setStatus("ZAAG: PROCES");
+        await animate(setLineProgress, 30, 60, 1000); 
+        setOvenState({ open: false, heating: false });
+        
+        setSawState({ down: true }); await wait(200);
+        await wait(600);
+        setSawState({ down: false }); await wait(200);
+        
+        // --- 5. BAND ---
+        setStatus("SORTEREN...");
+        const targetPiston = Math.floor(Math.random() * 3);
+        const targetProgress = 80 + (targetPiston * 8); 
+        await animate(setLineProgress, 60, targetProgress, 1200);
 
-        case 'NAAR_BAND':
-          // Product schuift van oven naar band
-          timeout = setTimeout(() => {
-            addLog("Product verplaatst naar lopende band.");
-            setProductPos({ ...COORDS.band_start, opacity: 1 });
-            setStep('OP_BAND');
-          }, 1500);
-          break;
+        // --- 6. PISTON ---
+        setStatus(`SORTEREN: BAKJE #${targetPiston+1}`);
+        setActivePiston(targetPiston);
+        await animate(setPistonExt, 0, 35, 150);
+        setLineProgress(0); setBlockInBin(targetPiston);
+        await animate(setPistonExt, 35, 0, 150);
+        setActivePiston(-1);
 
-        case 'OP_BAND':
-          // Product beweegt over de band (CSS transitie doet het werk)
-          // We zetten hier de eindpositie, de transition time zorgt voor de beweging
-          setProductPos({ ...COORDS.band_eind, opacity: 1 });
-          timeout = setTimeout(() => {
-            addLog("Product gearriveerd bij sorteer-einde.");
-            setStep('OPHALEN_BAND');
-          }, 3000); // Duurt even lang als de band loopt
-          break;
+        // --- 7. ROBOT PICKUP ---
+        setStatus("ROBOT: OPHALEN");
+        // Naar Rechts (90 graden)
+        let pAngle = 90; 
+        let pReach = 160; 
+        if(targetPiston === 1) pReach = 150;
+        if(targetPiston === 2) pReach = 140;
 
-        case 'OPHALEN_BAND':
-          // Kraan draait naar band (90 graden)
-          setKraanRotatie(90);
-          timeout = setTimeout(() => {
-            addLog("Kraan pakt gesorteerd product.");
-            setStep('TERUG_MAGAZIJN');
-          }, 2000);
-          break;
+        await animate(setRobAngle, 0, 90, 600);
+        await animate(setRobReach, 0, pReach, 400);
+        
+        setBlockInBin(-1);
+        setRobHasBlock(true);
+        await animate(setRobReach, pReach, 50, 400);
 
-        case 'TERUG_MAGAZIJN':
-          // Kraan draait terug naar magazijn (-90 graden)
-          setProductPos({ ...COORDS.band_eind, opacity: 0 }); // Opgetild
-          setKraanRotatie(-90);
-          timeout = setTimeout(() => {
-            addLog("Product teruggeplaatst in opslag. Cyclus klaar.");
-            setProductPos({ ...COORDS.magazijn, opacity: 1 });
-            setStep('RUST');
-          }, 2500);
-          break;
+        // --- 8. RETOUR ---
+        setStatus("MAGAZIJN: OPSLAAN");
+        // Terug naar -90
+        await animate(setRobAngle, 90, -90, 800);
+        
+        await animate(setRobReach, 50, 200, 400);
+        setRobHasBlock(false);
+        setWhHasBlock(true);
+        await animate(setRobReach, 200, 0, 300);
+        
+        await animate(setCraneY, 240, slot, 600);
+        await animate(setArmX, 0, 42, 400);
+        setWhHasBlock(false); 
+        await animate(setArmX, 42, 0, 400);
+        await animate(setCraneY, slot, 240, 600);
       }
     };
 
-    runCycle();
-    return () => clearTimeout(timeout);
-  }, [step]);
+    runSequence();
+    
+    // Cleanup
+    return () => cancelAnimationFrame(requestRef.current);
+  }, []);
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
   return (
-    <div className="kensan-container" style={{ backgroundColor: THEME.bg, minHeight: '100vh', display: 'flex', width: '100%', fontFamily: 'monospace' }}>
+    <div className="kensan-container" style={{ height: '100vh', backgroundColor: '#121212', color: '#ccc' }}>
       <Sidebar activeItem="overview" />
-
-      <div className="kensan-main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: THEME.bg }}>
+      <div className="kensan-main-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <Header buttonColor={isOnline ? "green" : "red"} />
-
-        <main className="p-6 overflow-y-auto" style={{ backgroundColor: THEME.bg, color: THEME.text }}>
-          
-          {/* Top Bar */}
-          <div className="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
-            <div>
-              <h1 className="text-3xl font-black text-red-600 tracking-tighter uppercase">FACTORY OVERVIEW</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                <span className="text-xs text-gray-500 uppercase">Live Simulation Sequence</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">{data?.warehouseStock || 0}</div>
-              <div className="text-xs text-gray-500 uppercase">Totaal in Opslag</div>
+        
+        <div className="kensan-dashboard-main" style={{ flex: 1, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h1 style={{ color: THEME.accent_orange, margin: 0 }}>OVERVIEW</h1>
+            <div style={{ background: '#222', padding: '5px 15px', borderRadius: '4px', border: '1px solid #444' }}>
+                STATUS: <span style={{ color: '#fff', fontWeight: 'bold' }}>{status}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* LINKERKANT: De Grote Visualisatie */}
-            <div className="lg:col-span-2 relative bg-[#0a0a0a] border border-[#333] rounded-xl h-[700px] shadow-2xl overflow-hidden">
-              {/* SVG Canvas voor de machines */}
-              <svg className="w-full h-full absolute top-0 left-0">
-                <defs>
-                  <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#1a1a1a" strokeWidth="1" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
+          <div style={{ flex: 1, background: '#080808', border: '1px solid #333', borderRadius: '8px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
-                {/* Verbindingslijnen (Pijlen) - Rood en subtiel */}
-                <path d="M 180 400 Q 400 400 400 450" stroke="#222" strokeWidth="2" fill="none" strokeDasharray="5,5" />
-                <path d="M 400 450 L 400 220" stroke="#222" strokeWidth="2" fill="none" strokeDasharray="5,5" />
-                <path d="M 450 200 L 700 200" stroke="#222" strokeWidth="2" fill="none" strokeDasharray="5,5" />
+            <svg viewBox="100 80 600 400" style={{ width: '100%', height: '100%' }} preserveAspectRatio="xMidYMid meet">
+                
+                <Warehouse x={160} y={140} craneY={craneY} armX={armX} hasBlock={whHasBlock} />
 
-                {/* De Machines */}
-                <MagazijnVisual isActive={step === 'OPHALEN_MAGAZIJN' || step === 'TERUG_MAGAZIJN'} />
-                <OvenVisual isActive={step === 'IN_OVEN'} />
-                <LoopbandVisual isActive={step === 'OP_BAND'} />
-                <KraanVisual rotatie={kraanRotatie} isActive={['OPHALEN_MAGAZIJN', 'NAAR_OVEN', 'OPHALEN_BAND', 'TERUG_MAGAZIJN'].includes(step)} />
+                <Robot x={360} y={380} angle={robAngle} reach={robReach} hasBlock={robHasBlock} />
 
-              </svg>
+                <ProductionLine 
+                    x={340} 
+                    y={140} 
+                    ovenState={ovenState} 
+                    sawState={sawState} 
+                    lineProgress={lineProgress}
+                    pistonActiveIndex={activePiston}
+                    pistonExtension={pistonExt}
+                    blockInBin={blockInBin} 
+                />
 
-              {/* HET PRODUCT (Blokje) - Dit is een HTML div die over de SVG zweeft voor soepele CSS transities */}
-              <div 
-                style={{
-                  position: 'absolute',
-                  left: productPos.x,
-                  top: productPos.y,
-                  opacity: productPos.opacity,
-                  width: '40px',
-                  height: '40px',
-                  backgroundColor: '#000',
-                  border: `2px solid ${THEME.accent}`,
-                  boxShadow: `0 0 15px ${THEME.accent}`,
-                  borderRadius: '4px',
-                  transform: 'translate(-50%, -50%)',
-                  transition: 'left 1.5s ease-in-out, top 1.5s ease-in-out, opacity 0.3s',
-                  zIndex: 50,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
-              </div>
-
-              {/* Status Overlay linksboven */}
-              <div className="absolute top-4 left-4 bg-black/80 border border-red-900/30 p-3 rounded text-xs font-mono text-red-400">
-                STATUS: {step.replace('_', ' ')}
-              </div>
-            </div>
-
-            {/* RECHTERKANT: Logs & Info */}
-            <div className="flex flex-col gap-6">
-              
-              {/* Event Log */}
-              <div className="bg-[#0a0a0a] border border-[#333] rounded-xl p-6 h-[400px] flex flex-col">
-                <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 tracking-widest border-b border-gray-800 pb-2">Systeem Logs</h3>
-                <div className="flex-1 overflow-hidden relative">
-                  <div className="absolute inset-0 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                    {logs.map((log, i) => (
-                      <div key={i} className="text-xs font-mono border-l-2 border-red-600 pl-3 py-1 text-gray-400 animate-in fade-in slide-in-from-left-2 duration-300">
-                        <span className="text-red-500 block text-[10px] mb-0.5 opacity-70">{log.split(']')[0]}]</span>
-                        {log.split(']')[1]}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Machine Status Cards */}
-              <div className="bg-[#0a0a0a] border border-[#333] rounded-xl p-6 flex-1">
-                <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 tracking-widest">Component Status</h3>
-                <div className="space-y-4">
-                  <StatusRow label="Magazijn" active={step.includes('MAGAZIJN')} />
-                  <StatusRow label="Kraan" active={step.includes('OPHALEN') || step.includes('NAAR')} />
-                  <StatusRow label="Oven" active={step === 'IN_OVEN'} />
-                  <StatusRow label="Loopband" active={step === 'OP_BAND'} />
-                </div>
-              </div>
-
-            </div>
+            </svg>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
-}
-
-// Klein hulpcomponentje voor de status lijst
-const StatusRow = ({ label, active }: { label: string, active: boolean }) => (
-  <div className="flex justify-between items-center p-3 bg-black/40 rounded border border-gray-900">
-    <span className="text-xs font-bold text-gray-300 uppercase">{label}</span>
-    <div className={`flex items-center gap-2 text-[10px] font-bold ${active ? 'text-red-500' : 'text-gray-700'}`}>
-      {active ? 'ACTIEF' : 'STANDBY'}
-      <div className={`w-2 h-2 rounded-full ${active ? 'bg-red-500 animate-pulse shadow-[0_0_8px_red]' : 'bg-gray-800'}`}></div>
-    </div>
-  </div>
-);
+};
