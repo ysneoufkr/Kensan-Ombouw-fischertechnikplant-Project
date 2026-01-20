@@ -18,7 +18,11 @@ class OPCUAController {
     private endpoint: string = `opc.tcp://${config.ip}:4840/UA/TestServer/GVL/Interface`;
 
     public async connect() {
-        this.client = OPCUAClient.create({ endpointMustExist: false });
+        this.client = OPCUAClient.create({
+            endpointMustExist: false,
+            keepSessionAlive: true,
+            requestedSessionTimeout: 60000
+        });
         await this.client.connect(this.endpoint);
         console.log("Connected to OPC UA server");
 
