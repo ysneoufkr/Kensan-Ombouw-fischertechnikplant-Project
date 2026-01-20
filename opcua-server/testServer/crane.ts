@@ -111,5 +111,40 @@ export function createCraneObject(namespace: Namespace) {
         }
     });
 
+    const statusAssignment = namespace.addObject({
+        browseName: "Assignment",
+        componentOf: crane
+    });
+
+    namespace.addVariable({
+        componentOf: statusAssignment,
+        browseName: "Assignment_source",
+        nodeId: "ns=1;s=Crane.Assignment.source",
+        dataType: "Int16",
+        minimumSamplingInterval: 5000,
+        value: {
+            get: () => new Variant({ dataType: DataType.Int16, value: assignmentSource }),
+            set: (variant: Variant) => {
+                assignmentSource = variant.value;
+                return StatusCodes.Good;
+            }
+        }
+    });
+
+    namespace.addVariable({
+        componentOf: statusAssignment,
+        browseName: "Assignment_destination",
+        nodeId: "ns=1;s=Crane.Assignment.destination",
+        dataType: "Int16",
+        minimumSamplingInterval: 5000,
+        value: {
+            get: () => new Variant({ dataType: DataType.Int16, value: assignmentDestination }),
+            set: (variant: Variant) => {
+                assignmentDestination = variant.value;
+                return StatusCodes.Good;
+            }
+        }
+    });
+
     return crane;
 }
