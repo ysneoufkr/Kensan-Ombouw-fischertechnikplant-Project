@@ -42,7 +42,7 @@ export class Crane extends BaseModel {
     }
 
     public async writeAssignment(source: CraneDestinations, destination: CraneDestinations) {
-        await this.write("Assignments.source", source, DataType.Int16);
-        await this.write("Assignments.destination", destination, DataType.Int16);
+        await this.write("Assignment.source", source, DataType.Int16);
+        await this.write("Assignment.destination", destination, DataType.Int16);
     }
 }
