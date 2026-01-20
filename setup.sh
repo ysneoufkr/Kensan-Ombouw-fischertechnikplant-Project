@@ -1,9 +1,20 @@
-cd "$(dirname "$0")/frontend/Kensan"
-npm run dev &
+set -e
 
-cd "$(dirname "$0")/backend"
-npm run dev &
+BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-cd "$(dirname "$0")/backend"
-npm run api &
+echo "Installing frontend..."
+cd "$BASE_DIR/frontend/Kensan"
+npm install
+npm run dev --host &
 
+echo "Installing backend (dev)..."
+cd "$BASE_DIR/backend"
+npm install
+npm run dev --host &
+
+echo "Installing backend (api)..."
+cd "$BASE_DIR/backend"
+npm install
+npm run api --host &
+
+wait

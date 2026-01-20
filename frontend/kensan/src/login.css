@@ -132,7 +132,7 @@
 }
 
 .kensan-login-input:focus {
-  border-color: var(--color-kensan-light_blue);
+  border-color: var(--color-cyberdefense-orange);
 }
 
 .kensan-login-input::placeholder {
@@ -144,7 +144,7 @@
 .kensan-login-button {
   width: 100%;
   padding: 0.875rem;
-  background-color: var(--color-kensan-light_blue);
+  background-color: var(--color-cyberdefense-orange);
   color: white;
   border: none;
   border-radius: 8px;
@@ -155,7 +155,7 @@
 }
 
 .kensan-login-button:hover:not(:disabled) {
-  background-color: var(--color-kensan-dark_blue);
+  background-color: var(--color-cyberdefense-dark_orange);
 }
 
 .kensan-login-button:disabled {

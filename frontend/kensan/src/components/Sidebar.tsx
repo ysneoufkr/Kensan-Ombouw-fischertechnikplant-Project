@@ -105,21 +105,9 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
         />
         <MenuItem 
           icon="shelves"
-          label="Warehouse"
-          isActive={activeItem === 'warehouse'}
-          onClick={() => setActiveItem('warehouse')}
-        />
-        <MenuItem 
-          icon="grid_view"
-          label="Coming soon!"
-          isActive={activeItem === 'coming1'}
-          onClick={() => setActiveItem('coming1')}
-        />
-        <MenuItem 
-          icon="grid_view"
-          label="Coming soon!"
-          isActive={activeItem === 'coming2'}
-          onClick={() => setActiveItem('coming2')}
+          label="Overview"
+          isActive={activeItem === 'overview'}
+          onClick={() => setActiveItem('overview')}
         />
         <MenuItem 
           icon="person_add"

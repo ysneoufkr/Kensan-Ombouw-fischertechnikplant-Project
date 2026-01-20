@@ -86,7 +86,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 3px solid var(--color-kensan-light_blue);
+  border: 3px solid var(--color-cyberdefense-orange);
   transition: background-color 0.4s ease;
 }
 
@@ -135,7 +135,7 @@
 }
 
 .kensan-input:focus {
-  border-color: var(--color-kensan-light_blue);
+  border-color: var(--color-cyberdefense-orange);
 }
 
 .kensan-input::placeholder {
@@ -163,12 +163,12 @@
 }
 
 .kensan-btn-primary {
-  background-color: var(--color-kensan-light_blue);
+  background-color: var(--color-cyberdefense-orange);
   color: white;
 }
 
 .kensan-btn-primary:hover:not(:disabled) {
-  background-color: var(--color-kensan-dark_blue);
+  background-color: var(--color-cyberdefense-dark_orange);
   transform: translateY(-2px);
 }
 
@@ -224,7 +224,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 2px solid var(--color-kensan-light_blue);
+  border: 2px solid var(--color-cyberdefense-orange);
   flex-shrink: 0;
   transition: background-color 0.4s ease;
 }

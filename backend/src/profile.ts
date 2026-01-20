@@ -2,16 +2,14 @@ import bcrypt from 'bcrypt';
 import db from './db.js';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import type { User, UserWithoutPassword, UpdateProfileData } from './types.js';
+import { User, UserWithoutPassword } from './models/user.js';
+import { UpdateProfileData } from './models/profile.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const SALT_ROUNDS = 10;
 
 export function updateUserProfile(userId: number, data: UpdateProfileData): UserWithoutPassword | null {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as User | undefined;
-  
+
   if (!user) {
     throw new Error('User not found');
   }
@@ -40,7 +38,7 @@ export function updateUserProfile(userId: number, data: UpdateProfileData): User
     if (existingUser) {
       throw new Error('Email already in use');
     }
-    
+
     const stmt = db.prepare('UPDATE users SET email = ? WHERE id = ?');
     stmt.run(data.email, userId);
   }
@@ -64,7 +62,7 @@ export function updateUserProfile(userId: number, data: UpdateProfileData): User
 export function updateProfilePicture(userId: number, filename: string): void {
   // Get old profile picture
   const user = db.prepare('SELECT profile_picture FROM users WHERE id = ?').get(userId) as { profile_picture?: string } | undefined;
-  
+
   // Delete old profile picture if exists
   if (user?.profile_picture) {
     const oldPath = path.join(__dirname, '../profile_pictures', user.profile_picture);
@@ -80,7 +78,7 @@ export function updateProfilePicture(userId: number, filename: string): void {
 
 export function deleteProfilePicture(userId: number): void {
   const user = db.prepare('SELECT profile_picture FROM users WHERE id = ?').get(userId) as { profile_picture?: string } | undefined;
-  
+
   if (user?.profile_picture) {
     const picturePath = path.join(__dirname, '../profile_pictures', user.profile_picture);
     if (fs.existsSync(picturePath)) {
@@ -94,7 +92,7 @@ export function deleteProfilePicture(userId: number): void {
 
 export function deleteUserAccount(userId: number, password: string): boolean {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as User | undefined;
-  
+
   if (!user) {
     throw new Error('User not found');
   }
@@ -116,6 +114,6 @@ export function deleteUserAccount(userId: number, password: string): boolean {
   // Delete user from database
   const stmt = db.prepare('DELETE FROM users WHERE id = ?');
   const result = stmt.run(userId);
-  
+
   return result.changes > 0;
 }

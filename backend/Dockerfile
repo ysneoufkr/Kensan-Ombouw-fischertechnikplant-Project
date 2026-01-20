@@ -9,6 +9,6 @@ COPY . .
 
 RUN npm run build
 
-EXPOSE 4840
+EXPOSE 3000
 
-CMD ["node", "dist/testServer.js"]
+CMD ["node", "dist/server.js"]
