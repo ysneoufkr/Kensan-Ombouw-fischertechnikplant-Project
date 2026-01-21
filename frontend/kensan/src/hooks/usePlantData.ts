@@ -22,18 +22,18 @@ const POLL_INTERVAL = 5000; // 5 seconds
 
 // Default fallback data
 const DEFAULT_DATA: PlantData = {
-  ovenRunning: false,
+  ovenRunning: true,
   ovenStatus: 'idle',
   craneRunning: false,
   cranePosition: 'unknown',
-  craneMove: false,
-  warehouseRunning: false,
+  craneMove: true,
+  warehouseRunning: true,
   warehouseLocationX: 0,
   warehouseLocationY: 0,
-  warehousePickup: false,
-  warehouseStore: false,
+  warehousePickup: true,
+  warehouseStore: true,
   warehouseStock: 0,
-  conveyerRunning: false,
+  conveyerRunning: true,
 };
 
 export const usePlantData = () => {
