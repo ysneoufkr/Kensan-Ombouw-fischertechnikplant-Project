@@ -16,7 +16,7 @@ export interface PlantData {
   conveyerRunning: boolean;
 }
 
-const API_URL = 'http://localhost:3001';
+const API_URL = 'http://localhost:3000';
 const TESTDATA_URL = '/testdata.json'; // Load testdata.json dynamically
 const POLL_INTERVAL = 5000; // 5 seconds
 
@@ -46,7 +46,7 @@ export const usePlantData = () => {
     const fetchData = async () => {
       try {
         // First, try to fetch from the API
-        const response = await axios.get(`${API_URL}/api/all`, {
+        const response = await axios.get(`${API_URL}/api/crane/status`, {
           timeout: 3000, // 3 second timeout
         });
         

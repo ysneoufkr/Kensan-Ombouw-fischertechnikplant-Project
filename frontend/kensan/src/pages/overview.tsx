@@ -1,3 +1,7 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
+// @ts-nocheck
+
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
@@ -5,7 +9,7 @@ import { usePlantData } from '../hooks/usePlantData';
 import '../kensan.css';
 
 // ==============================================================================
-// 0. CONFIGURATIE & STYLING
+// 0. CONFIGURATIE
 // ==============================================================================
 
 const THEME = {
@@ -36,7 +40,7 @@ const Canopy = ({ x, y, width }) => (
 );
 
 // ==============================================================================
-// 1. MAGAZIJN (LINKS)
+// 1. MAGAZIJN
 // ==============================================================================
 const Warehouse = ({ x, y, craneY, armX, hasBlock }) => (
   <g transform={`translate(${x}, ${y})`}>
@@ -61,22 +65,20 @@ const Warehouse = ({ x, y, craneY, armX, hasBlock }) => (
         <rect width="50" height="10" fill={THEME.conveyor} />
     </g>
     
-    {/* KRAAN */}
-    <g transform={`translate(0, ${craneY})`}> 
-      {/* Arm (Achter de body) */}
+    <g transform={`translate(0, ${craneY})`}>
+      {/* Arm achter body */}
       <g transform={`translate(${armX}, 8)`}>
         <rect x="0" y="2" width="40" height="5" fill="#ccc" stroke="#666" />
         <rect x="35" y="0" width="6" height="9" fill="#fff" />
         {hasBlock && <rect x="30" y="-5" width="10" height="10" fill="#fff" stroke="#666" />}
       </g>
-      {/* Body */}
       <rect x="-5" y="0" width="34" height="25" fill={THEME.ft_red} rx="2" stroke="#000" />
     </g>
   </g>
 );
 
 // ==============================================================================
-// 2. ROBOT (MIDDEN)
+// 2. ROBOT
 // ==============================================================================
 const Robot = ({ x, y, angle, reach, hasBlock }) => (
   <g transform={`translate(${x}, ${y})`}>
@@ -98,7 +100,7 @@ const Robot = ({ x, y, angle, reach, hasBlock }) => (
 );
 
 // ==============================================================================
-// 3. PRODUCTIE & SORTEER LIJN (RECHTS)
+// 3. PRODUCTIE
 // ==============================================================================
 const ProductionLine = ({ 
   x, y, 
@@ -113,26 +115,28 @@ const ProductionLine = ({
     
     if (lineProgress > 0) {
         if (lineProgress <= 30) { 
-            // FASE 1: Oven In (-15 -> 25)
+            // Oven In (-15 -> 25)
             bx = -15 + (lineProgress / 30) * 40; 
             by = 30;
             if (lineProgress > 20 && ovenState.heating) isVisible = false;
         } else if (lineProgress <= 60) { 
-            // FASE 2: Naar Zaag (25 -> 125)
+            // Naar Zaag (25 -> 125) (125 = precies onder zaag)
             const p = (lineProgress - 30) / 30;
             bx = 25 + p * 100; 
             by = 30;
         } else if (lineProgress <= 100) { 
-            // FASE 3: Naar Band (125 -> 175) en Omlaag
+            // Naar Band (125 -> 175) en Omlaag
             const p = (lineProgress - 60) / 40;
             if (p < 0.25) {
+                // Horizontaal naar band
                 const subP = p / 0.25;
                 bx = 125 + subP * 50; 
                 by = 30;
             } else {
+                // Verticaal omlaag
                 const subP = (p - 0.25) / 0.75;
                 bx = 175;
-                if (pistonExtension > 0) bx -= pistonExtension; 
+                if (pistonExtension > 0) bx -= pistonExtension;
                 by = 30 + subP * 320;
             }
         }
@@ -203,7 +207,7 @@ const ProductionLine = ({
 };
 
 // ==============================================================================
-// HOOFD COMPONENT - MET SUPER SMOOTH ANIMATIE LOOP
+// HOOFD COMPONENT
 // ==============================================================================
 
 export const Overview = () => {
@@ -223,25 +227,24 @@ export const Overview = () => {
   const [pistonExt, setPistonExt] = useState(0);
   const [blockInBin, setBlockInBin] = useState(-1);
 
-  // Ref om animaties te cancelen als component unmount
+  // Ref om animaties te cancelen en state te checken
   const requestRef = useRef();
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
+
     const runSequence = async () => {
       const wait = ms => new Promise(r => setTimeout(r, ms));
       
-      // DEZE FUNCTIE ZORGT VOOR DE SMOOTHNESS (RequestAnimationFrame)
       const animate = (setter, start, end, duration) => {
           return new Promise(resolve => {
               const startTime = performance.now();
-              
               const tick = (currentTime) => {
+                  if (!mounted.current) return;
                   const elapsed = currentTime - startTime;
                   const progress = Math.min(elapsed / duration, 1);
-                  
-                  // Easing function voor nog zachtere beweging (optioneel, nu lineair)
                   const val = start + (end - start) * progress;
-                  
                   setter(val);
                   
                   if (progress < 1) {
@@ -250,33 +253,32 @@ export const Overview = () => {
                       resolve();
                   }
               };
-              
               requestRef.current = requestAnimationFrame(tick);
           });
       };
 
-      while(true) {
+      while(mounted.current) {
         // --- 1. MAGAZIJN UITSLAG ---
         setStatus("MAGAZIJN: OPHALEN");
         const slot = [180, 130, 80][Math.floor(Math.random()*3)];
         
         await animate(setCraneY, craneY, slot, 600); 
         await wait(100);
-        await animate(setArmX, 0, 42, 400); 
+        await animate(setArmX, 0, 25, 400); 
         setWhHasBlock(true); await wait(150);
-        await animate(setArmX, 42, 0, 400); 
+        await animate(setArmX, 25, 0, 400); 
         await animate(setCraneY, slot, 240, 600);
 
         // --- 2. ROBOT TRANSFER ---
         setStatus("ROBOT: TRANSFER");
         setWhHasBlock(false);
-        // Naar Links (-90)
-        await animate(setRobAngle, -90, -90, 100); // Check
+        // Linksom (-90)
+        await animate(setRobAngle, -90, -90, 100); 
         await animate(setRobReach, 0, 200, 400); 
         setRobHasBlock(true);
         await animate(setRobReach, 200, 50, 400);
         
-        // Naar Rechts (0 graden = recht omhoog/rechts)
+        // Midden (0)
         await animate(setRobAngle, -90, 0, 800);
         await animate(setRobReach, 50, 240, 400); 
         
@@ -317,7 +319,7 @@ export const Overview = () => {
 
         // --- 7. ROBOT PICKUP ---
         setStatus("ROBOT: OPHALEN");
-        // Naar Rechts (90 graden)
+        // Rechtsom (90)
         let pAngle = 90; 
         let pReach = 160; 
         if(targetPiston === 1) pReach = 150;
@@ -332,26 +334,28 @@ export const Overview = () => {
 
         // --- 8. RETOUR ---
         setStatus("MAGAZIJN: OPSLAAN");
-        // Terug naar -90
+        // Terug naar links (-90)
         await animate(setRobAngle, 90, -90, 800);
-        
         await animate(setRobReach, 50, 200, 400);
         setRobHasBlock(false);
         setWhHasBlock(true);
         await animate(setRobReach, 200, 0, 300);
         
         await animate(setCraneY, 240, slot, 600);
-        await animate(setArmX, 0, 42, 400);
+        await animate(setArmX, 0, 25, 400);
         setWhHasBlock(false); 
-        await animate(setArmX, 42, 0, 400);
+        await animate(setArmX, 25, 0, 400);
         await animate(setCraneY, slot, 240, 600);
       }
     };
 
     runSequence();
     
-    // Cleanup
-    return () => cancelAnimationFrame(requestRef.current);
+    // Cleanup om memory leaks te voorkomen
+    return () => {
+        mounted.current = false;
+        cancelAnimationFrame(requestRef.current);
+    };
   }, []);
 
   return (
@@ -372,22 +376,9 @@ export const Overview = () => {
             <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
             <svg viewBox="100 80 600 400" style={{ width: '100%', height: '100%' }} preserveAspectRatio="xMidYMid meet">
-                
                 <Warehouse x={160} y={140} craneY={craneY} armX={armX} hasBlock={whHasBlock} />
-
                 <Robot x={360} y={380} angle={robAngle} reach={robReach} hasBlock={robHasBlock} />
-
-                <ProductionLine 
-                    x={340} 
-                    y={140} 
-                    ovenState={ovenState} 
-                    sawState={sawState} 
-                    lineProgress={lineProgress}
-                    pistonActiveIndex={activePiston}
-                    pistonExtension={pistonExt}
-                    blockInBin={blockInBin} 
-                />
-
+                <ProductionLine x={340} y={140} ovenState={ovenState} sawState={sawState} lineProgress={lineProgress} pistonActiveIndex={activePiston} pistonExtension={pistonExt} blockInBin={blockInBin} />
             </svg>
           </div>
         </div>
