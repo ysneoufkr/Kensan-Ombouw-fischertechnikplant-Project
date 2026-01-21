@@ -16,18 +16,18 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
   const [showLogoutMenu, setShowLogoutMenu] = useState<boolean | 'closing'>(false);
   const [refreshKey, setRefreshKey] = useState(0);
   
-  // Logo path based on theme
+  // Logo pad gebaseerd op thema
   const logoSrc = isDarkMode ? '/logo_dark.png' : '/logo_light.png';
   
   const { mutate: logout } = useLogout();
   const { data: identity, refetch } = useGetIdentity();
   const navigate = useNavigate();
   
-  const username = identity?.name || identity?.email?.split('@')[0] || 'Guest';
-  const profilePicture = identity?.profile_picture;
+  const username = (identity as any)?.name || (identity as any)?.email?.split('@')[0] || 'Gast';
+  const profilePicture = (identity as any)?.profile_picture;
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Initialize theme from localStorage on mount
+  // Thema initialiseren bij laden
   useEffect(() => {
     const savedTheme = localStorage.getItem('kensan-theme');
     if (savedTheme === 'light') {
@@ -37,7 +37,7 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
     }
   }, []);
 
-  // Listen for profile updates
+  // Luister naar profiel wijzigingen
   useEffect(() => {
     const handleProfileUpdate = () => {
       refetch();
@@ -71,11 +71,11 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
     setIsDarkMode(newMode);
     
     if (newMode) {
-      // Dark mode
+      // Donkere modus
       document.documentElement.classList.remove('light-mode');
       localStorage.setItem('kensan-theme', 'dark');
     } else {
-      // Light mode
+      // Lichte modus
       document.documentElement.classList.add('light-mode');
       localStorage.setItem('kensan-theme', 'light');
     }
@@ -107,7 +107,10 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
           icon="shelves"
           label="Overview"
           isActive={activeItem === 'overview'}
-          onClick={() => setActiveItem('overview')}
+          onClick={() => {
+            setActiveItem('overview');
+            navigate('/overview'); // Navigeert nu correct naar de /overview route
+          }}
         />
         <MenuItem 
           icon="person_add"
@@ -151,7 +154,7 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
                   ? profilePicture 
                   : `http://localhost:3000/profile_pictures/${profilePicture}`
                 } 
-                alt="Profile" 
+                alt="Profiel" 
                 style={{
                   width: '100%',
                   height: '100%',
@@ -207,17 +210,11 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
                   gap: '0.5rem',
                   transition: 'background-color 0.2s',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                   manage_accounts
                 </span>
-                Account Settings
+                Account Instellingen
               </button>
               <button
                 onClick={() => {
@@ -237,17 +234,11 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
                   gap: '0.5rem',
                   transition: 'background-color 0.2s',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                   logout
                 </span>
-                Logout
+                Uitloggen
               </button>
             </div>
           )}
@@ -258,7 +249,7 @@ function Sidebar({ activeItem: initialActiveItem = 'dashboard' }: SidebarProps) 
 }
 
 /**
- * MENU ITEM - With white bar on left and right when active
+ * MENU ITEM Component
  */
 interface MenuItemProps {
   icon: string;
@@ -296,7 +287,6 @@ function MenuItem({ icon, label, isActive = false, disabled = false, onClick }: 
         {label}
       </span>
       
-      {/* White bar on the right with fade animation */}
       {isActive && (
         <div className="kensan-menu-indicator" />
       )}

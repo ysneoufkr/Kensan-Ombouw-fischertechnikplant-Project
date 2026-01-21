@@ -11,4 +11,4 @@ RUN npm run build
 
 EXPOSE 4840
 
-CMD ["node", "dist/testServer.js"]
+CMD ["npm", "run", "server"]
